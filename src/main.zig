@@ -1,5 +1,7 @@
 const std = @import("std");
 
+//Type to represent a bitboard
+//don't know why jujustu is saying nothing changed when I am clearly adding comments.
 pub const bitboard: type = u64;
 
 pub const A1 = 0;
