@@ -1,8 +1,31 @@
 const std = @import("std");
+const math = std.math;
+const ArrayList = std.ArrayList;
 
 //Type to represent a bitboard
 //don't know why jujustu is saying nothing changed when I am clearly adding comments.
 pub const bitboard: type = u64;
+
+pub const Piece = enum {
+    white_pawn,
+    white_knight,
+    white_bishop,
+    white_rook,
+    white_queen,
+    white_king,
+    black_pawn,
+    black_knight,
+    black_bishop,
+    black_rook,
+    black_queen,
+    black_king,
+};
+
+pub const Move = struct {
+    piece: Piece,
+    from: u6,
+    to: u6,
+};
 
 pub const A1 = 0;
 pub const B1 = 1;
@@ -72,6 +95,8 @@ pub const H8 = 63;
 pub const all_piece_starting_squares = [_]u6{ A1, B1, C1, D1, E1, F1, G1, H1, A2, B2, C2, D2, E2, F2, G2, H2, A7, B7, C7, D7, E7, F7, G7, H7, A8, B8, C8, D8, E8, F8, G8, H8 };
 pub const all_white_piece_starting_squares = [_]u6{ A1, B1, C1, D1, E1, F1, G1, H1, A2, B2, C2, D2, E2, F2, G2, H2 };
 pub const all_black_piece_starting_squares = [_]u6{ A7, B7, C7, D7, E7, F7, G7, H7, A8, B8, C8, D8, E8, F8, G8, H8 };
+
+pub const all_white_pawn_starting_squares = A2 | B2 | C2 | D2 | E2 | F2 | G2 | H2;
 
 //Function to set a bit on a bitboard
 pub fn set_bit(bb: *bitboard, square: u6) void {
@@ -146,12 +171,13 @@ pub fn clear_black_chessboard(bb: *bitboard) void {
     }
 }
 
-//Function currently breaks due to u6 overflow
+//Function to print bitboard in semi-readable format for chess players.
 pub fn print_bitboard(bb: bitboard) void {
     std.debug.print("   a b c d e f g h\n", .{});
     std.debug.print("   _ _ _ _ _ _ _ _\n", .{});
     var i: u6 = 0;
     while (i < 64) {
+        //this is just logic to make the rank appear correctly
         if (i % 8 == 0) {
             var remainder = (i / 8);
             if (remainder == 0) {
@@ -161,6 +187,7 @@ pub fn print_bitboard(bb: bitboard) void {
             }
             std.debug.print("{d}| ", .{remainder});
         }
+        //sets 1 for occupied squares and "_" for unoccupied
         if (is_set(bb, i)) {
             std.debug.print("1 ", .{});
         } else {
@@ -177,6 +204,9 @@ pub fn print_bitboard(bb: bitboard) void {
             std.debug.print(" |{d}\n", .{remainder});
         }
 
+        //this prevents integer overflow which could break the program. I is u6, so the largest it can be is 63, when it reaches this value we don't want to increment it anymore.
+        //further incrementing it will lead to integer overflow. All this occurs because bitwise operators in zig don't work on all integer types.
+        //there might need to be exploration of the math library later.
         if (i == 63) {
             break;
         }
@@ -187,43 +217,34 @@ pub fn print_bitboard(bb: bitboard) void {
     std.debug.print("   a b c d e f g h\n", .{});
 }
 
+pub fn generate_white_pawn_moves(white_pawns: bitboard, allOccupied: bitboard) ArrayList(Move) {
+
+    //1. white pawns can only move one rank forward
+    const single_push = white_pawns << 8 & ~allOccupied;
+
+    var moves = ArrayList(Move).init(std.heap.page_allocator);
+    if (single_push != 0) {
+        var new_move: Move = .{ .piece = Piece.white_pawn, .from = 0, .to = 0 };
+        new_move = Move{ .piece = Piece.white_pawn, .from = A2, .to = A3 };
+        moves.append(new_move) catch unreachable;
+    }
+    return moves;
+}
+
 pub fn main() !void {
     const anum = 0b0000;
     var mybitboard: bitboard = undefined;
     mybitboard = anum;
-    const white_pawn_bitboard: bitboard = 0b0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_1111_1111_0000_0000;
-    const white_rook_bitboard: bitboard = 0b0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_1000_0001;
-    const white_knight_bitboard: bitboard = 0b0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0100_0010;
-    const white_bishop_bitboard: bitboard = 0b0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0010_0100;
-    const white_queen_bitboard: bitboard = 0b0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0001_0000;
-    const white_king_bitboard: bitboard = 0b0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_1000;
-    const all_white_bitboard: bitboard = white_pawn_bitboard | white_rook_bitboard | white_knight_bitboard | white_bishop_bitboard | white_queen_bitboard | white_king_bitboard;
-
-    const black_pawn_bitboard: bitboard = 0b0000_0000_1111_1111_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000;
-    const black_rook_bitboard: bitboard = 0b1000_0001_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000;
-    const black_knight_bitboard: bitboard = 0b0100_0010_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000;
-    const black_bishop_bitboard: bitboard = 0b0010_0100_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000;
-    const black_queen_bitboard: bitboard = 0b0001_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000;
-    const black_king_bitboard: bitboard = 0b0000_1000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000;
-    const all_black_bitboard: bitboard = black_pawn_bitboard | black_rook_bitboard | black_knight_bitboard | black_bishop_bitboard | black_queen_bitboard | black_king_bitboard;
+    const generated_white_pawn_moves = generate_white_pawn_moves(all_white_pawn_starting_squares, mybitboard);
 
     const stdout_file = std.io.getStdOut().writer();
     var bw = std.io.bufferedWriter(stdout_file);
     const stdout = bw.writer();
 
     set_chessboard(&mybitboard);
-
-    try stdout.print("White Pawn Bitboard says: {d}\n", .{white_pawn_bitboard});
-    try stdout.print("Black Pawn Bitboard says: {d}\n", .{black_pawn_bitboard});
-    try stdout.print("White Rook Bitboard says: {d}\n", .{white_rook_bitboard});
-    try stdout.print("White Knight Bitboard says: {d}\n", .{white_knight_bitboard});
-    try stdout.print("White Bishop Bitboard says: {d}\n", .{white_bishop_bitboard});
-    try stdout.print("White Queen Bitboard says: {d}\n", .{white_queen_bitboard});
-    try stdout.print("White King Bitboard says: {d}\n", .{white_king_bitboard});
-    try stdout.print("All White Bitboard says: {b:0>64}\n", .{all_white_bitboard});
-    try stdout.print("All Black Bitboard says: {b:0>64}\n", .{all_black_bitboard});
     try stdout.print("This is my bitboard: {b:0>64}\n", .{mybitboard});
     try stdout.print("This is the population count: {d}\n", .{population_count(mybitboard)});
+    try stdout.print("This is the bitboard for possible pawn move generation: {any}\n", .{generated_white_pawn_moves.items});
 
     try bw.flush();
     print_bitboard(mybitboard);
