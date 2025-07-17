@@ -6,6 +6,23 @@ const ArrayList = std.ArrayList;
 //don't know why jujustu is saying nothing changed when I am clearly adding comments.
 pub const bitboard: type = u64;
 
+pub const Board = struct {
+    WhitePawns: bitboard,
+    WhiteKnights: bitboard,
+    WhiteBishops: bitboard,
+    WhiteRooks: bitboard,
+    WhiteQueens: bitboard,
+    WhiteKing: bitboard,
+    BlackPawns: bitboard,
+    BlackKnights: bitboard,
+    BlackBishops: bitboard,
+    BlackRooks: bitboard,
+    BlackQueens: bitboard,
+    BlackKing: bitboard,
+
+    // You can add more state here: side to move, castling rights, en passant square, etc.
+};
+
 pub const Piece = enum {
     white_pawn,
     white_knight,
@@ -97,6 +114,8 @@ pub const all_white_piece_starting_squares = [_]u6{ A1, B1, C1, D1, E1, F1, G1, 
 pub const all_black_piece_starting_squares = [_]u6{ A7, B7, C7, D7, E7, F7, G7, H7, A8, B8, C8, D8, E8, F8, G8, H8 };
 
 pub const all_white_pawn_starting_squares = A2 | B2 | C2 | D2 | E2 | F2 | G2 | H2;
+
+var all_knights_bitboard: bitboard = 0b0000000000000000000000000000000000000000000000000000000000000000;
 
 //Function to set a bit on a bitboard
 pub fn set_bit(bb: *bitboard, square: u6) void {
