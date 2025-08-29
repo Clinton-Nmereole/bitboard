@@ -241,11 +241,11 @@ pub fn generate_white_pawn_moves(white_pawns: bitboard, allOccupied: bitboard) A
     //1. white pawns can only move one rank forward
     const single_push = white_pawns << 8 & ~allOccupied;
 
-    var moves = ArrayList(Move).init(std.heap.page_allocator);
+    var moves = ArrayList(Move).empty;
     if (single_push != 0) {
         var new_move: Move = .{ .piece = Piece.white_pawn, .from = 0, .to = 0 };
         new_move = Move{ .piece = Piece.white_pawn, .from = A2, .to = A3 };
-        moves.append(new_move) catch unreachable;
+        moves.append(std.heap.page_allocator, new_move) catch unreachable;
     }
     return moves;
 }
@@ -256,15 +256,15 @@ pub fn main() !void {
     mybitboard = anum;
     const generated_white_pawn_moves = generate_white_pawn_moves(all_white_pawn_starting_squares, mybitboard);
 
-    const stdout_file = std.io.getStdOut().writer();
-    var bw = std.io.bufferedWriter(stdout_file);
-    const stdout = bw.writer();
+    var stdout_buffer: [4096]u8 = undefined;
+    var stdout_file = std.fs.File.stdout().writer(&stdout_buffer);
+    const stdout = &stdout_file.interface;
 
     set_chessboard(&mybitboard);
     try stdout.print("This is my bitboard: {b:0>64}\n", .{mybitboard});
     try stdout.print("This is the population count: {d}\n", .{population_count(mybitboard)});
     try stdout.print("This is the bitboard for possible pawn move generation: {any}\n", .{generated_white_pawn_moves.items});
 
-    try bw.flush();
+    try stdout.flush();
     print_bitboard(mybitboard);
 }
